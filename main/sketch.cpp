@@ -9,6 +9,7 @@
 #include <cmath>
 #include <Wire.h>
 
+
 const double grav = 9.81;
 
 int in1Pin = 18;
@@ -22,13 +23,16 @@ int in4Pin = 16;
 double throttle = 0.0;
 double angle = 0.0;
 
-double pitchAccel = 0.0;
-double rollAccel = 0.0;
+float Ax_cal = 0.0f;
+float Ay_cal = 0.0f;
+float Az_cal = 0.0f;
 
+float Gx_cal = 0.0f;
+float Gy_cal = 0.0f;
+float Gz_cal = 0.0f;
 
-double heading = 0.0;       // Current integrated heading in degrees
-double gyroYBias = 0.0;     // Gyro bias in degrees/second
-uint32_t previousIMUTime = 0;
+float pitch = 0.0f;
+float roll = 0.0f;
 
 
 // Custom MPU6050 I2C driver using direct register access
@@ -118,94 +122,56 @@ bool readMPU6050() {
     return true;
 }
 
-bool updateHeading() {
-    if (!readMPU6050()) {
-        return false;
-    }
+void calibrateIMU() {
 
-    uint32_t currentTime = micros();
-
-    // On the first call, there is no previous time yet.
-    if (previousIMUTime == 0) {
-        previousIMUTime = currentTime;
-        return true;
-    }
-
-    double dt =
-        static_cast<double>(currentTime - previousIMUTime) / 1000000.0;
-
-    previousIMUTime = currentTime;
-
-    // Prevent a large timing gap from causing a large heading jump.
-    if (dt <= 0.0 || dt > 0.1) {
-        return false;
-    }
-
-    // ±250 deg/s range means 131 raw units per degree/second.
-    double gyroYDegreesPerSecond =
-        gyroYRaw / 131.0;
-
-    double correctedGyroY =
-        gyroYDegreesPerSecond - gyroYBias;
-
-    // Ignore very small stationary gyro noise.
-    if (fabs(correctedGyroY) < 0.3) {
-        correctedGyroY = 0.0;
-    }
-
-    // Angular velocity × elapsed time = change in angle.
-    heading += correctedGyroY * dt;
-
-    // Keep the heading between -180 and +180 degrees.
-    while (heading > 180.0) {
-        heading -= 360.0;
-    }
-
-    while (heading < -180.0) {
-        heading += 360.0;
-    }
-
-    return true;
-}
-
-
-bool calibrateGyroY() {
     constexpr int sampleCount = 1000;
 
-    int validSamples = 0;
-    int64_t rawTotal = 0;
 
-    Console.println("Keep the robot completely still...");
+    float Ax = 0.0f;
+    float Ay = 0.0f;
+    float Az = 0.0f;
+
+    float Gx = 0.0f;
+    float Gy = 0.0f;
+    float Gz = 0.0f;
+
+    Serial.println("Keep IMU still while calibrating...");
+    delay(500);
 
     for (int i = 0; i < sampleCount; i++) {
-        if (readMPU6050()) {
-            rawTotal += gyroYRaw;
-            validSamples++;
-        }
+        readMPU6050();
 
-        delay(2);
+        Ax += accelXRaw;
+        Ay += accelYRaw;
+        Az += accelZRaw;
+
+        Gx += gyroXRaw;
+        Gy += gyroYRaw;
+        Gz += gyroZRaw;
+
     }
 
-    if (validSamples == 0) {
-        Console.println("Gyro calibration failed");
-        return false;
-    }
+    Ax_cal = Ax/sampleCount;
+    Ay_cal = Ax/sampleCount;
+    Az_cal = Ax/sampleCount;
 
-    double averageRaw =
-        static_cast<double>(rawTotal) / validSamples;
+    Gx_cal = Ax/sampleCount;
+    Gy_cal = Ax/sampleCount;
+    Gz_cal = Ax/sampleCount;
 
-    gyroYBias = averageRaw / 131.0;
-
-    heading = 0.0;
-    previousIMUTime = micros();
-
-    Console.printf(
-        "Gyro Y bias: %.4f deg/s\n",
-        gyroYBias
-    );
-
-    return true;
+    Serial.println("Calibration Complete!");
+    delay(500);
 }
+
+void getPitchandRoll() {
+    readMPU6050();
+
+    pitch = atan2(-Ax_cal, sqrt(Ay_cal*Ay_cal + Az_cal*Az_cal));
+    roll = atan2(Ay_cal,Az_cal);
+}
+
+
+
 
 
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
@@ -328,23 +294,6 @@ double usefulAngle(double Throttle, double Angle) {
     }
 
 
-void getPitchandRoll() {
-    readMPU6050();
-
-    double accelX = accelXRaw / 16384.0 * grav;
-    double accelY = accelYRaw / 16384.0 * grav;
-    double accelZ = accelZRaw / 16384.0 * grav;
-
-    double gyroX = (gyroXRaw / 131.0) * PI / 180.0;
-    double gyroY = (gyroYRaw / 131.0) * PI / 180.0;
-    double gyroZ = (gyroZRaw / 131.0) * PI / 180.0;
-
-     pitchAccel = atan2(-accelX, sqrt(accelY * accelY + accelZ * accelZ));
-     rollAccel = atan2(accelY, accelZ);
-}
-
-
-
 void processGamepad(ControllerPtr ctl) {
 
     //Maps the joystick values to pwm values
@@ -385,6 +334,8 @@ void processControllers() {
 }
 
 
+
+
 // Arduino setup function. Runs in CPU 1
 void setup() {
 
@@ -403,7 +354,7 @@ void setup() {
 } else {
     Console.println("MPU6050 initialized!");
 
-    calibrateGyroY();
+    calibrateIMU();
 }
 
     //Initialize the Bluetooth
@@ -428,14 +379,12 @@ void loop() {
 
         updateControl();
         getPitchandRoll();
-        updateHeading();
 
-        Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  |  Pitch: %7.2f°   Roll: %7.2f° | Heading: %7.2f\n",
+        Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
         throttle,
         usefulAngle(throttle, angle),
-        pitchAccel,
-        rollAccel,
-        heading
+        pitch,
+        roll
     );
 
     delay(20);
