@@ -279,6 +279,7 @@ void driveRight(int speed) {
     } else {
         digitalWrite(in3Pin, LOW);
         digitalWrite(in4Pin, LOW);
+        analogWrite(ena2Pin, 0);
         //digitalWrite(in3Pin, LOW);
         //digitalWrite(in4Pin, LOW);
     }
