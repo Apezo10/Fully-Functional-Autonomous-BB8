@@ -135,7 +135,7 @@ void calibrateIMU() {
     float Gy = 0.0f;
     float Gz = 0.0f;
 
-    Serial.println("Keep IMU still while calibrating...");
+     Console.println("Keep IMU still while calibrating...");
     delay(500);
 
     for (int i = 0; i < sampleCount; i++) {
@@ -151,23 +151,38 @@ void calibrateIMU() {
 
     }
 
-    Ax_cal = Ax/sampleCount;
-    Ay_cal = Ax/sampleCount;
-    Az_cal = Ax/sampleCount;
+    Ax_cal = (Ax / sampleCount) / 16384.0f;
+    Ay_cal = ((Ay / sampleCount) / 16384.0f) - 1.0f;
+    Az_cal = (Az / sampleCount) / 16384.0f;
 
-    Gx_cal = Ax/sampleCount;
-    Gy_cal = Ax/sampleCount;
-    Gz_cal = Ax/sampleCount;
+    Gx_cal = (Gx / sampleCount) / 131.0f;
+    Gy_cal = (Gy / sampleCount) / 131.0f;
+    Gz_cal = (Gz / sampleCount) / 131.0f;
 
-    Serial.println("Calibration Complete!");
+     Console.println("Calibration Complete!");
     delay(500);
 }
 
 void getPitchandRoll() {
     readMPU6050();
 
-    pitch = atan2(-Ax_cal, sqrt(Ay_cal*Ay_cal + Az_cal*Az_cal));
-    roll = atan2(Ay_cal,Az_cal);
+      float ax = accelXRaw / 16384.0f;
+      float ay = accelYRaw / 16384.0f;
+      float az = accelZRaw / 16384.0f;
+
+
+
+      float finalAx = ax - Ax_cal;
+      float finalAy = ay - Ay_cal;
+      float finalAz = az - Az_cal;
+
+
+    float finalGx = (gyroXRaw / 131.0f) - Gx_cal;
+    float finalGy = (gyroYRaw / 131.0f) - Gy_cal;
+    float finalGz = (gyroZRaw / 131.0f) - Gz_cal;
+
+    pitch = atan2(-finalAx, sqrt(finalAy*finalAy + finalAz*finalAz));
+    roll = atan2(finalAy,finalAz);
 }
 
 
@@ -240,21 +255,17 @@ void driveLeft(int speed) {
         digitalWrite(in1Pin, LOW);
         digitalWrite(in2Pin, HIGH);
         analogWrite(enaPin, abs(speed));
-        //digitalWrite(in3Pin, HIGH);
-        //digitalWrite(in4Pin, LOW);
-        //analogWrite(ena2Pin, abs(speed));
+
     } else if (speed < -26) {
         digitalWrite(in1Pin, HIGH);
         digitalWrite(in2Pin, LOW);
         analogWrite(enaPin, abs(speed));
-        //digitalWrite(in3Pin, LOW);
-        //digitalWrite(in4Pin, HIGH);
-        //analogWrite(ena2Pin, abs(speed));
+
     } else {
         digitalWrite(in1Pin, LOW);
         digitalWrite(in2Pin, LOW);
-        //digitalWrite(in3Pin, LOW);
-        //digitalWrite(in4Pin, LOW);
+        analogWrite(ena2Pin,0);
+
     }
 
 }
