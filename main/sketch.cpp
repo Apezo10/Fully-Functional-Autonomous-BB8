@@ -188,7 +188,6 @@ void getPitchandRoll() {
 
 
 
-
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
 
 void onConnectedController(ControllerPtr ctl) {
@@ -251,12 +250,12 @@ void dumpGamepad(ControllerPtr ctl) {
 void driveLeft(int speed) {
 
 
-    if (speed >26) {
+    if (speed >50) {
         digitalWrite(in1Pin, LOW);
         digitalWrite(in2Pin, HIGH);
         analogWrite(enaPin, abs(speed));
 
-    } else if (speed < -26) {
+    } else if (speed < -50) {
         digitalWrite(in1Pin, HIGH);
         digitalWrite(in2Pin, LOW);
         analogWrite(enaPin, abs(speed));
@@ -264,7 +263,7 @@ void driveLeft(int speed) {
     } else {
         digitalWrite(in1Pin, LOW);
         digitalWrite(in2Pin, LOW);
-        analogWrite(ena2Pin,0);
+        analogWrite(enaPin,0);
 
     }
 
@@ -273,14 +272,14 @@ void driveLeft(int speed) {
 void driveRight(int speed) {
 
 
-    if (speed >26) {
+    if (speed >50) {
         digitalWrite(in3Pin, HIGH);
         digitalWrite(in4Pin, LOW);
         analogWrite(ena2Pin, abs(speed));
         //digitalWrite(in3Pin, HIGH);
         //digitalWrite(in4Pin, LOW);
         //analogWrite(ena2Pin, abs(speed));
-    } else if (speed < -26) {
+    } else if (speed < -50) {
         digitalWrite(in3Pin, LOW);
         digitalWrite(in4Pin, HIGH);
         analogWrite(ena2Pin, abs(speed));
@@ -297,6 +296,7 @@ void driveRight(int speed) {
 
 }
 
+//Only read angle when throttle is >10%
 double usefulAngle(double Throttle, double Angle) {
         if (Throttle <10) {
             return 0.0f;
@@ -317,8 +317,17 @@ void processGamepad(ControllerPtr ctl) {
     int rightMotorSpeed = constrain(forward + turn, -255, 255);
     int leftMotorSpeed = constrain(forward - turn, -255, 255);
 
-driveLeft(leftMotorSpeed);
-driveRight(rightMotorSpeed);
+    Console.printf("axisX: %4d  axisY: %4d  forward: %4d  turn: %4d  left: %4d right: %4d\n",
+      ctl->axisX(),
+      ctl->axisY(),
+      forward,
+      turn,
+      leftMotorSpeed,
+      rightMotorSpeed
+  );
+
+driveLeft(255);
+driveRight(255);
 
 
     //Uses pwm values to calculate a throttle percentage from -100 to 100
@@ -329,6 +338,7 @@ driveRight(rightMotorSpeed);
     //Pythagorean theorem to solve for force vector and theta and update global variable
      throttle = constrain(sqrt((throttlePercentX*throttlePercentX)+(throttlePercentY * throttlePercentY)), 0, 100);
      angle = atan2(throttlePercentY, throttlePercentX)*180/PI;
+
 }
 
 
@@ -392,12 +402,12 @@ void loop() {
         updateControl();
         getPitchandRoll();
 
-        Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
-        throttle,
-        usefulAngle(throttle, angle),
-        pitch,
-        roll
-    );
+        //Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
+        //throttle,
+       // usefulAngle(throttle, angle),
+       // pitch,
+        //roll
+    //);
 
     delay(20);
 }
