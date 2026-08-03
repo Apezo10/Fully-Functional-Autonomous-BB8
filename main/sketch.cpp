@@ -9,9 +9,11 @@
 #include <cmath>
 #include <Wire.h>
 
+//WiFi setup header file
+#include "ESP_WiFi_initialization.h"
 
-const double grav = 9.81;
 
+//Pin constants
 int in1Pin = 18;
 int in2Pin = 19;
 int enaPin = 22;
@@ -296,6 +298,14 @@ void driveRight(int speed) {
 
 }
 
+int applyDeadband(int value, int deadband) {
+    if (abs(value) < deadband) {
+        return 0;
+    }
+
+    return value;
+}
+
 //Only read angle when throttle is >10%
 double usefulAngle(double Throttle, double Angle) {
         if (Throttle <10) {
@@ -309,10 +319,10 @@ double usefulAngle(double Throttle, double Angle) {
 void processGamepad(ControllerPtr ctl) {
 
     //Maps the joystick values to pwm values
-    int motorSpeedY = map(ctl ->axisY(), -512, 511, 255, -255);
-    int motorSpeedX = map(ctl ->axisX(), -512, 511, -255, 255);
-    int forward{motorSpeedY};
-    int turn{motorSpeedX};
+    int motorSpeedY = map(ctl->axisY(), -512, 511, 255, -255);
+    int motorSpeedX = map(ctl->axisX(), -512, 511, -255, 255);
+    int forward = applyDeadband(motorSpeedY, 35);
+    int turn = applyDeadband(motorSpeedX, 35);
 
     int rightMotorSpeed = constrain(forward + turn, -255, 255);
     int leftMotorSpeed = constrain(forward - turn, -255, 255);
@@ -326,8 +336,8 @@ void processGamepad(ControllerPtr ctl) {
       rightMotorSpeed
   );
 
-driveLeft(255);
-driveRight(255);
+driveLeft(leftMotorSpeed);
+driveRight(rightMotorSpeed);
 
 
     //Uses pwm values to calculate a throttle percentage from -100 to 100
@@ -379,6 +389,8 @@ void setup() {
     calibrateIMU();
 }
 
+
+
     //Initialize the Bluetooth
     Console.printf("Firmware: %s\n", BP32.firmwareVersion());
 
@@ -387,7 +399,15 @@ void setup() {
 
     BP32.enableVirtualDevice(false);
     BP32.enableBLEService(false);
+
+    //Initialize WiFi
+    if (connectWiFi()) {
+        Console.println("WiFi connected successfuly");
+    } else {
+        Console.println("WiFi connection failed");
+    }
 }
+
 
 void updateControl(){
     bool dataUpdated = BP32.update();

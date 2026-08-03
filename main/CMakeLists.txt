@@ -1,6 +1,7 @@
 set(srcs
         "main.c"
-        "sketch.cpp")
+        "sketch.cpp"
+        "ESP_WiFi_initialization.cpp")
 
 set(requires "bluepad32" "bluepad32_arduino" "arduino" "btstack")
 
