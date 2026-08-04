@@ -27,6 +27,21 @@ int in4Pin = 16;
 double throttle = 0.0;
 double angle = 0.0;
 
+enum DriveMode {
+    DRIVE_MODE_BLUETOOTH,
+    DRIVE_MODE_AUTONOMOUS
+};
+
+DriveMode driveMode = DRIVE_MODE_BLUETOOTH;
+
+constexpr uint32_t MODE_TOGGLE_HOLD_MS = 3000;
+constexpr uint32_t PI_COMMAND_TIMEOUT_MS = 300;
+
+uint32_t yHoldStartMs = 0;
+bool yToggleHandled = false;
+
+void stopMotors();
+
 float Ax_cal = 0.0f;
 float Ay_cal = 0.0f;
 float Az_cal = 0.0f;
@@ -221,6 +236,9 @@ void onDisconnectedController(ControllerPtr ctl) {
         if (myControllers[i] == ctl) {
             Console.printf("CALLBACK: Controller disconnected from index=%d\n", i);
             myControllers[i] = nullptr;
+            yHoldStartMs = 0;
+            yToggleHandled = false;
+            stopMotors();
             foundController = true;
             break;
         }
@@ -300,6 +318,11 @@ void driveRight(int speed) {
 
 }
 
+void stopMotors() {
+    driveLeft(0);
+    driveRight(0);
+}
+
 int applyDeadband(int value, int deadband) {
     if (abs(value) < deadband) {
         return 0;
@@ -316,6 +339,38 @@ double usefulAngle(double Throttle, double Angle) {
     
         return Angle;
     }
+
+void toggleDriveMode() {
+    if (driveMode == DRIVE_MODE_BLUETOOTH) {
+        driveMode = DRIVE_MODE_AUTONOMOUS;
+        Console.println("Drive mode: autonomous Pi UDP");
+    } else {
+        driveMode = DRIVE_MODE_BLUETOOTH;
+        Console.println("Drive mode: Bluetooth controller");
+    }
+
+    stopMotors();
+}
+
+void updateModeToggle(ControllerPtr ctl) {
+    if (!ctl->y()) {
+        yHoldStartMs = 0;
+        yToggleHandled = false;
+        return;
+    }
+
+    uint32_t nowMs = millis();
+
+    if (yHoldStartMs == 0) {
+        yHoldStartMs = nowMs;
+        return;
+    }
+
+    if (!yToggleHandled && nowMs - yHoldStartMs >= MODE_TOGGLE_HOLD_MS) {
+        toggleDriveMode();
+        yToggleHandled = true;
+    }
+}
 
 
 void processGamepad(ControllerPtr ctl) {
@@ -345,13 +400,42 @@ driveRight(rightMotorSpeed);
 
 }
 
+void processPiCommand() {
+    float piForward = 0.0f;
+    float piTurn = 0.0f;
+    uint32_t commandAgeMs = 0;
+
+    bool hasCommand = getLatestPiCommand(
+        piForward,
+        piTurn,
+        commandAgeMs
+    );
+
+    if (!hasCommand || commandAgeMs > PI_COMMAND_TIMEOUT_MS) {
+        stopMotors();
+        return;
+    }
+
+    int forward = static_cast<int>(piForward * 255.0f);
+    int turn = static_cast<int>(piTurn * 255.0f);
+
+    int rightMotorSpeed = constrain(forward + turn, -255, 255);
+    int leftMotorSpeed = constrain(forward - turn, -255, 255);
+
+    driveLeft(leftMotorSpeed);
+    driveRight(rightMotorSpeed);
+}
 
 
 void processControllers() {
     for (auto myController : myControllers) {
-        if (myController && myController->isConnected() && myController->hasData()) {
+        if (myController && myController->isConnected()) {
             if (myController->isGamepad()) {
-                processGamepad(myController);
+                updateModeToggle(myController);
+
+                if (driveMode == DRIVE_MODE_BLUETOOTH) {
+                    processGamepad(myController);
+                }
             } else {
                 Console.printf("Unsupported controller\n");
             }
@@ -411,16 +495,18 @@ void setup() {
 
 
 void updateControl(){
-    bool dataUpdated = BP32.update();
-
-    if (dataUpdated) {
-        processControllers();
-    }
+    BP32.update();
+    processControllers();
 }
 // Arduino loop function. Runs in CPU 1.
 void loop() {
 
         updateControl();
+
+        if (driveMode == DRIVE_MODE_AUTONOMOUS) {
+            processPiCommand();
+        }
+
         getPitchandRoll();
 
        // Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
