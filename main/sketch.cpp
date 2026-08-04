@@ -11,6 +11,8 @@
 
 //WiFi setup header file
 #include "ESP_WiFi_initialization.h"
+//UDP setup header file
+#include "ESP_UDP_reciever.h"
 
 
 //Pin constants
@@ -327,14 +329,6 @@ void processGamepad(ControllerPtr ctl) {
     int rightMotorSpeed = constrain(forward + turn, -255, 255);
     int leftMotorSpeed = constrain(forward - turn, -255, 255);
 
-    Console.printf("axisX: %4d  axisY: %4d  forward: %4d  turn: %4d  left: %4d right: %4d\n",
-      ctl->axisX(),
-      ctl->axisY(),
-      forward,
-      turn,
-      leftMotorSpeed,
-      rightMotorSpeed
-  );
 
 driveLeft(leftMotorSpeed);
 driveRight(rightMotorSpeed);
@@ -364,7 +358,6 @@ void processControllers() {
         }
     }
 }
-
 
 
 
@@ -403,9 +396,17 @@ void setup() {
     //Initialize WiFi
     if (connectWiFi()) {
         Console.println("WiFi connected successfuly");
+
+        //Initialize UDP connection
+          if (startUDPReceiver()) {
+            Console.println("UDP receiver started");
+        } else {
+            Console.println("UDP receiver failed to start");
+        }
     } else {
         Console.println("WiFi connection failed");
     }
+
 }
 
 
@@ -422,12 +423,11 @@ void loop() {
         updateControl();
         getPitchandRoll();
 
-        //Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
+       // Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
         //throttle,
        // usefulAngle(throttle, angle),
        // pitch,
-        //roll
-    //);
+       // roll);
 
     delay(20);
 }
