@@ -1,5 +1,0 @@
-# macOS finder files
-**/.DS_Store
-
-# Firmware binaries
-examples/**/build/
