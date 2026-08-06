@@ -1,0 +1,4 @@
+#pragma once
+
+#define BB8_WIFI_SSID "YOUR_WIFI_SSID"
+#define BB8_WIFI_PASSWORD "YOUR_WIFI_PASSWORD"

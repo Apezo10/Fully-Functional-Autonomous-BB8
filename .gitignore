@@ -2,8 +2,24 @@
 sdkconfig.old
 sdkconfig
 
+# Local secrets and private configuration
+.env
+.env.*
+!.env.example
+secrets.h
+config.local.h
+credentials.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# PlatformIO generated files
+.pio/
+.pioenvs/
+*.map
+
 # misc
-.pioenvs
 .clang_complete
 .gcc-flags.json
 

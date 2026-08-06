@@ -67,6 +67,7 @@ static void wifiEventHandler(
     }
 }
 
+//Create function called in header
 bool connectWiFi() {
     wifiEventGroup = xEventGroupCreate();
 
