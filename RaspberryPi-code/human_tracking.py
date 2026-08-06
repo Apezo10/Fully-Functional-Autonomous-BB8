@@ -70,7 +70,7 @@ class HumanTracker:
                 status = "detected"
             else:
                 self._clear_target()
-                return self._lost_result("no person", frame_width, frame_height)
+                return self._lost_result("no person")
         else:
             ok, box = self.tracker.update(frame) if self.tracker is not None else (False, None)
             if not ok or box is None or not self._is_box_valid(box, frame_width, frame_height):
@@ -78,7 +78,7 @@ class HumanTracker:
                 detection = self.detector.detect(frame, self.last_box)
                 if detection is None:
                     self._clear_target()
-                    return self._lost_result("tracker lost", frame_width, frame_height)
+                    return self._lost_result("tracker lost")
 
                 self._reset_tracker(frame, detection)
                 source = "MobileNet-SSD"
@@ -94,7 +94,7 @@ class HumanTracker:
             frame_height,
         ):
             self._clear_target()
-            return self._lost_result("invalid box", frame_width, frame_height)
+            return self._lost_result("invalid box")
 
         forward, turn, area_ratio = self._calculate_commands(
             self.last_box,
@@ -135,13 +135,7 @@ class HumanTracker:
         if result.valid and result.box is not None:
             x, y, box_width, box_height = (int(value) for value in result.box)
             target_center = (x + box_width // 2, y + box_height // 2)
-            cv2.rectangle(
-                frame,
-                (x, y),
-                (x + box_width, y + box_height),
-                (0, 255, 0),
-                2,
-            )
+            cv2.rectangle(frame, (x, y), (x + box_width, y + box_height), (0, 255, 0), 2)
             cv2.circle(frame, target_center, 4, (0, 0, 255), -1)
 
         confidence = "n/a" if result.confidence is None else f"{result.confidence:.2f}"
@@ -176,8 +170,17 @@ class HumanTracker:
         """Initialize KCF from a fresh MobileNet-SSD detection."""
 
         self.tracker = create_kcf_tracker()
-        self.tracker.init(frame, detection.box)
-        self.last_box = detection.box
+        x, y, width, height = detection.box
+        tracker_box = (
+            int(x),
+            int(y),
+            int(width),
+            int(height),
+        )
+
+        # Some OpenCV KCF builds reject numpy/float boxes; pass plain ints.
+        self.tracker.init(frame, tracker_box)
+        self.last_box = tracker_box
         self.last_confidence = detection.confidence
         self.target_valid = True
 
@@ -191,12 +194,7 @@ class HumanTracker:
         self.smoothed_forward = 0.0
         self.smoothed_turn = 0.0
 
-    def _lost_result(
-        self,
-        status: str,
-        frame_width: int,
-        frame_height: int,
-    ) -> TrackingResult:
+    def _lost_result(self, status: str) -> TrackingResult:
         """Return an immediate zero-command result for any lost-target condition."""
 
         self._update_fps()
@@ -370,7 +368,7 @@ def main() -> int:
     tracker = HumanTracker(config)
     controller = UdpController(config)
     camera: Picamera2 | None = None
-    last_frame_time = time.monotonic()
+    last_valid_frame_time = time.monotonic()
     last_fps_print = time.monotonic()
 
     print("Starting with conservative motor commands. Test with robot lifted first.")
@@ -385,12 +383,12 @@ def main() -> int:
                 controller.stop(force=True)
                 continue
 
-            last_frame_time = time.monotonic()
+            last_valid_frame_time = time.monotonic()
             result = tracker.process_frame(frame)
             controller.send(result.forward, result.turn, force=not result.valid)
 
             now = time.monotonic()
-            if now - last_frame_time > config.max_seconds_without_frame:
+            if now - last_valid_frame_time > config.max_seconds_without_frame:
                 # Never keep driving from a stale frame.
                 controller.stop(force=True)
 
