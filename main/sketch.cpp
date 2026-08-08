@@ -509,11 +509,11 @@ void loop() {
 
         getPitchandRoll();
 
-       // Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
-        //throttle,
-       // usefulAngle(throttle, angle),
-       // pitch,
-       // roll);
+        Console.printf( "Throttle: %5.1f%%   Angle: %6.1f°  | Pitch: %7.2f   Roll: %7.2f\n",
+        throttle,
+        usefulAngle(throttle, angle),
+        pitch,
+        roll);
 
-    delay(20);
+    delay(200);
 }

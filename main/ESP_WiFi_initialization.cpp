@@ -152,6 +152,8 @@ bool connectWiFi() {
 
     ESP_ERROR_CHECK(esp_wifi_start());
 
+    ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
+
     ESP_LOGI(
         WIFI_TAG,
         "Connecting to %s...",

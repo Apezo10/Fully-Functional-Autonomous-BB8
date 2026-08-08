@@ -8,6 +8,7 @@
 #include "esp_timer.h"
 
 #include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 
 #include "lwip/inet.h"
@@ -23,7 +24,8 @@ static int64_t lastCommandTimeUs = 0;
 
 // Protects the command variables because one task writes them
 // while the main loop reads them.
-static portMUX_TYPE commandMux = portMUX_INITIALIZER_UNLOCKED;
+static StaticSemaphore_t commandMutexBuffer;
+static SemaphoreHandle_t commandMutex = nullptr;
 
 static TaskHandle_t udpTaskHandle = nullptr;
 
@@ -165,14 +167,15 @@ static void udpReceiverTask(void*) {
             1.0f
         );
 
-        // Safely update the shared command variables.
-        portENTER_CRITICAL(&commandMux);
+        int64_t commandTimeUs = esp_timer_get_time();
 
-        latestForward = receivedForward;
-        latestTurn = receivedTurn;
-        lastCommandTimeUs = esp_timer_get_time();
+        if (xSemaphoreTake(commandMutex, portMAX_DELAY) == pdTRUE) {
+            latestForward = receivedForward;
+            latestTurn = receivedTurn;
+            lastCommandTimeUs = commandTimeUs;
 
-        portEXIT_CRITICAL(&commandMux);
+            xSemaphoreGive(commandMutex);
+        }
 
         ESP_LOGI(
             UDP_TAG,
@@ -188,6 +191,21 @@ bool startUDPReceiver() {
     // Avoid accidentally creating the task twice.
     if (udpTaskHandle != nullptr) {
         return true;
+    }
+
+    if (commandMutex == nullptr) {
+        commandMutex = xSemaphoreCreateMutexStatic(
+            &commandMutexBuffer
+        );
+
+        if (commandMutex == nullptr) {
+            ESP_LOGE(
+                UDP_TAG,
+                "Failed to create command mutex"
+            );
+
+            return false;
+        }
     }
 
     BaseType_t result = xTaskCreate(
@@ -221,13 +239,21 @@ bool getLatestPiCommand(
 ) {
     int64_t copiedCommandTimeUs = 0;
 
-    portENTER_CRITICAL(&commandMux);
+    if (commandMutex == nullptr) {
+        commandAgeMs = UINT32_MAX;
+        return false;
+    }
 
-    forward = latestForward;
-    turn = latestTurn;
-    copiedCommandTimeUs = lastCommandTimeUs;
+    if (xSemaphoreTake(commandMutex, portMAX_DELAY) == pdTRUE) {
+        forward = latestForward;
+        turn = latestTurn;
+        copiedCommandTimeUs = lastCommandTimeUs;
 
-    portEXIT_CRITICAL(&commandMux);
+        xSemaphoreGive(commandMutex);
+    } else {
+        commandAgeMs = UINT32_MAX;
+        return false;
+    }
 
     // No packet has been received yet.
     if (copiedCommandTimeUs == 0) {
