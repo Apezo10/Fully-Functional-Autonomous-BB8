@@ -12,10 +12,7 @@
 #include "esp_wifi.h"
 #include "nvs_flash.h"
 
-
-//Name of the WiFi network that esp connects to
-static constexpr char WIFI_SSID[] = "Pezo Family";
-static constexpr char WIFI_PASSWORD[] = "Benandadin";
+#include "secrets.h"
 
 static const char* WIFI_TAG = "BB8_WIFI";
 
@@ -177,13 +174,13 @@ bool connectWiFi() {
 
     std::strncpy(
         reinterpret_cast<char*>(wifiConfig.sta.ssid),
-        WIFI_SSID,
+        BB8_WIFI_SSID,
         sizeof(wifiConfig.sta.ssid) - 1
     );
 
     std::strncpy(
         reinterpret_cast<char*>(wifiConfig.sta.password),
-        WIFI_PASSWORD,
+        BB8_WIFI_PASSWORD,
         sizeof(wifiConfig.sta.password) - 1
     );
 
@@ -208,7 +205,7 @@ bool connectWiFi() {
     ESP_LOGI(
         WIFI_TAG,
         "Connecting to %s...",
-        WIFI_SSID
+        BB8_WIFI_SSID
     );
 
     EventBits_t bits = xEventGroupWaitBits(
