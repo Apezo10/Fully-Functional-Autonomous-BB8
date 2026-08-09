@@ -468,15 +468,6 @@ void setup() {
 
 
 
-    //Initialize the Bluetooth
-    Console.printf("Firmware: %s\n", BP32.firmwareVersion());
-
-    bool startScanning = true;
-    BP32.setup(&onConnectedController, &onDisconnectedController, startScanning);
-
-    BP32.enableVirtualDevice(false);
-    BP32.enableBLEService(false);
-
     //Initialize WiFi
     if (connectWiFi()) {
         Console.println("WiFi connected successfuly");
@@ -490,6 +481,15 @@ void setup() {
     } else {
         Console.println("WiFi connection failed");
     }
+
+    //Initialize the Bluetooth after WiFi so startup scans do not fight WiFi association.
+    Console.printf("Firmware: %s\n", BP32.firmwareVersion());
+
+    bool startScanning = true;
+    BP32.setup(&onConnectedController, &onDisconnectedController, startScanning);
+
+    BP32.enableVirtualDevice(false);
+    BP32.enableBLEService(false);
 
 }
 

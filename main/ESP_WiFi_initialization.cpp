@@ -4,6 +4,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
+#include "freertos/task.h"
 
 #include "esp_event.h"
 #include "esp_log.h"
@@ -20,9 +21,32 @@ static const char* WIFI_TAG = "BB8_WIFI";
 
 //FreeRTOS event group used to track connection
 static EventGroupHandle_t wifiEventGroup;
+static TaskHandle_t wifiReconnectTaskHandle = nullptr;
 
 //Bit that becomes 1 after eps gets IP
 static constexpr EventBits_t WIFI_CONNECTED_BIT = BIT0;
+static constexpr uint32_t WIFI_RECONNECT_DELAY_MS = 1000;
+
+static void wifiReconnectTask(void*) {
+    while (true) {
+        ulTaskNotifyTake(
+            pdTRUE,
+            portMAX_DELAY
+        );
+
+        vTaskDelay(
+            pdMS_TO_TICKS(WIFI_RECONNECT_DELAY_MS)
+        );
+
+        esp_wifi_connect();
+    }
+}
+
+static void requestWiFiConnect() {
+    if (wifiReconnectTaskHandle != nullptr) {
+        xTaskNotifyGive(wifiReconnectTaskHandle);
+    }
+}
 
 
 //This function is called whenever WiFi or IP event occur
@@ -36,7 +60,7 @@ static void wifiEventHandler(
         eventBase == WIFI_EVENT &&
         eventId == WIFI_EVENT_STA_START
     ) {
-        esp_wifi_connect();
+        requestWiFiConnect();
     }
 
     else if (
@@ -44,7 +68,13 @@ static void wifiEventHandler(
         eventId == WIFI_EVENT_STA_DISCONNECTED
     ) {
         ESP_LOGW(WIFI_TAG, "Disconnected. Reconnecting...");
-        esp_wifi_connect();
+
+        xEventGroupClearBits(
+            wifiEventGroup,
+            WIFI_CONNECTED_BIT
+        );
+
+        requestWiFiConnect();
     }
 
     else if (
@@ -70,6 +100,27 @@ static void wifiEventHandler(
 //Create function called in header
 bool connectWiFi() {
     wifiEventGroup = xEventGroupCreate();
+
+    if (wifiReconnectTaskHandle == nullptr) {
+        BaseType_t taskResult = xTaskCreatePinnedToCore(
+            wifiReconnectTask,
+            "wifi_reconnect",
+            3072,
+            nullptr,
+            4,
+            &wifiReconnectTaskHandle,
+            1
+        );
+
+        if (taskResult != pdPASS) {
+            ESP_LOGE(
+                WIFI_TAG,
+                "Failed to create reconnect task"
+            );
+
+            return false;
+        }
+    }
 
     esp_err_t result = nvs_flash_init();
 
