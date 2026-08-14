@@ -1,4 +1,4 @@
-BB-8 Star Wars robot:
+BB-8 Bluetooth Connection
 
 This project documents the design and integration of a BB-8 inspired robotic ball that combines embedded motion control, Bluetooth communication, and computer vision based tracking. The central goal is to move from a static spherical shell to a responsive robotic system that can be controlled, observed, and evaluated through both hardware behavior and visual feedback.
 
@@ -10,17 +10,13 @@ The build is organized around an ESP32 development board using the Arduino frame
 
 The first test validates the perception pipeline. MobileNet performs object detection, while KCF maintains frame-to-frame continuity after the target is located. This pairing is useful because detection alone can be computationally expensive, whereas tracking alone can drift without a reliable initialization step. Together, they produce a more stable and efficient vision loop.
 
-<video src="https://share.icloud.com/photos/0ecACTKBYWeGN7hoT07nFULkA" controls muted playsinline preload="metadata" width="720"></video>
-
-[Open the MobileNet + KCF demonstration](https://share.icloud.com/photos/0ecACTKBYWeGN7hoT07nFULkA)
+<video src="media/mobilenet-kcf-demo.mov" controls muted playsinline preload="metadata" width="720"></video>
 
 ### Integrated Ball Motion
 
 The second test shows the assembled ball moving through a half-hemisphere range of motion. This demonstration is important because it moves the project beyond isolated electronics and confirms that the internal actuation system can translate control input into visible mechanical behavior.
 
-<video src="https://share.icloud.com/photos/0d5ZLVlTxETN9MwpTfy457qiw" controls muted playsinline preload="metadata" width="720"></video>
-
-[Open the integrated motion demonstration](https://share.icloud.com/photos/0d5ZLVlTxETN9MwpTfy457qiw)
+<video src="media/integrated-ball-motion.mov" controls muted playsinline preload="metadata" width="720"></video>
 
 ## Project Objectives
 
@@ -95,6 +91,7 @@ BB8 Bluetooth Connection/
   lib/                     Project-specific libraries
   src/                     Main firmware source directory
   test/                    PlatformIO test directory
+  media/                   Project demonstration videos
   bluepad32-template/      Bluetooth controller template and dependencies
   platformio.ini           ESP32 board and framework configuration
 ```
