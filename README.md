@@ -10,18 +10,17 @@ The build is organized around an ESP32 development board using the Arduino frame
 
 The first test validates the perception pipeline. MobileNet performs object detection, while KCF maintains frame-to-frame continuity after the target is located. This pairing is useful because detection alone can be computationally expensive, whereas tracking alone can drift without a reliable initialization step. Together, they produce a more stable and efficient vision loop.
 
-<video src="media/mobilenet-kcf-demo.mov" controls muted playsinline preload="metadata" width="720"></video>
+<video src="media/mobilenet-kcf-demo.mp4" controls muted playsinline preload="metadata" width="720"></video>
 
-[Watch the MobileNet + KCF detection and tracking video](media/mobilenet-kcf-demo.mov)
-
+[Watch the MobileNet + KCF detection and tracking video](media/mobilenet-kcf-demo.mp4)
 
 ### Integrated Ball Motion
 
 The second test shows the assembled ball moving through a half-hemisphere range of motion. This demonstration is important because it moves the project beyond isolated electronics and confirms that the internal actuation system can translate control input into visible mechanical behavior.
 
-<video src="media/integrated-ball-motion.mov" controls muted playsinline preload="metadata" width="720"></video>
+<video src="media/integrated-ball-motion.mp4" controls muted playsinline preload="metadata" width="720"></video>
 
-[Watch the integrated ball motion video](media/integrated-ball-motion.mov)
+[Watch the integrated ball motion video](media/integrated-ball-motion.mp4)
 
 ## Project Objectives
 
@@ -175,3 +174,4 @@ Potential improvements include:
 ## Conclusion
 
 This BB-8 robotic ball project demonstrates the early integration of embedded control, wireless communication, mechanical actuation, and computer vision. Its strength lies in the fact that the system is evaluated both internally, through controller and firmware behavior, and externally, through visual tracking. That combination creates a more disciplined engineering workflow and gives the project a clear path from prototype to more rigorous robotic experimentation.
+
