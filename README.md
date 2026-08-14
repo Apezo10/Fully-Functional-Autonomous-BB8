@@ -12,11 +12,16 @@ The first test validates the perception pipeline. MobileNet performs object dete
 
 <video src="media/mobilenet-kcf-demo.mov" controls muted playsinline preload="metadata" width="720"></video>
 
+[Watch the MobileNet + KCF detection and tracking video](media/mobilenet-kcf-demo.mov)
+
+
 ### Integrated Ball Motion
 
 The second test shows the assembled ball moving through a half-hemisphere range of motion. This demonstration is important because it moves the project beyond isolated electronics and confirms that the internal actuation system can translate control input into visible mechanical behavior.
 
 <video src="media/integrated-ball-motion.mov" controls muted playsinline preload="metadata" width="720"></video>
+
+[Watch the integrated ball motion video](media/integrated-ball-motion.mov)
 
 ## Project Objectives
 
