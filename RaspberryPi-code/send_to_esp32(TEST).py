@@ -1,7 +1,7 @@
 import socket
 import time
 
-ESP32_IP = "192.168.86.39"
+ESP32_IP = "192.168.86.24"
 ESP32_PORT = 4210
 SEND_INTERVAL_SECONDS = 0.05
 
@@ -13,8 +13,8 @@ sock = socket.socket(
 try:
     while True:
         # Test values between -1.0 and 1.0.
-        forward = 0.25
-        turn = -0.10
+        forward = 0.50
+        turn = 0.00
 
         message = f"{forward:.3f},{turn:.3f}"
 

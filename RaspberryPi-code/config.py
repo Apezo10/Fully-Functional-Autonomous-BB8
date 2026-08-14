@@ -32,18 +32,18 @@ class TrackingConfig:
     shutdown_stop_delay_seconds: float = 0.05
 
     # Steering is proportional to normalized horizontal image error.
-    turn_kp: float = 0.45
+    turn_kp: float = 0.65
     turn_sign: float = 1.0
     horizontal_dead_zone_ratio: float = 0.08
-    max_turn: float = 0.25
+    max_turn: float = 0.45
 
     # Tune this on the real robot. It depends on camera mounting and person size.
     desired_area_ratio: float = 0.18
     area_dead_band_ratio: float = 0.15
-    max_forward: float = 0.18
-    max_reverse: float = -0.10
-    forward_kp: float = 1.0
-    turn_slowdown_at_max_turn: float = 0.55
+    max_forward: float = 0.45
+    max_reverse: float = -0.30
+    forward_kp: float = 1.8
+    turn_slowdown_at_max_turn: float = 0.35
 
     # Tracking and command safety thresholds.
     smoothing_alpha: float = 0.75

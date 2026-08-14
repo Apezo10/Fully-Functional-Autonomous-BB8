@@ -515,5 +515,5 @@ void loop() {
         pitch,
         roll);
 
-    delay(200);
+    delay(1000);
 }
