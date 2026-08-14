@@ -10,17 +10,13 @@ The build is organized around an ESP32 development board using the Arduino frame
 
 The first test validates the perception pipeline. MobileNet performs object detection, while KCF maintains frame-to-frame continuity after the target is located. This pairing is useful because detection alone can be computationally expensive, whereas tracking alone can drift without a reliable initialization step. Together, they produce a more stable and efficient vision loop.
 
-<video src="media/mobilenet-kcf-demo.mp4" controls muted playsinline preload="metadata" width="720"></video>
-
-[Watch the MobileNet + KCF detection and tracking video](media/mobilenet-kcf-demo.mp4)
+[Watch the MobileNet + KCF detection and tracking video](https://www.youtube.com/shorts/c6eFDMcRZfE)
 
 ### Integrated Ball Motion
 
 The second test shows the assembled ball moving through a half-hemisphere range of motion. This demonstration is important because it moves the project beyond isolated electronics and confirms that the internal actuation system can translate control input into visible mechanical behavior.
 
-<video src="media/integrated-ball-motion.mp4" controls muted playsinline preload="metadata" width="720"></video>
-
-[Watch the integrated ball motion video](media/integrated-ball-motion.mp4)
+[Watch the integrated BB8 motion video](https://www.youtube.com/shorts/LJOWvPuahys)
 
 ## Project Objectives
 
